@@ -1,0 +1,7 @@
+{
+  "pair": "XBTZAR",
+  "entry_threshold": 0.01,
+  "exit_threshold": 0.005,
+  "stake_size": 0.001,
+  "cooldown": "1m0s"
+}

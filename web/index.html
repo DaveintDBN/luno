@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Luno Bot Dashboard</title>
+</head>
+<body>
+  <h1>Luno Bot Dashboard</h1>
+  <form id="configForm">
+    <label>Entry Threshold: <input type="number" id="entryThreshold" step="any"></label>
+    <label>Exit Threshold: <input type="number" id="exitThreshold" step="any"></label>
+    <label>Stake Size: <input type="number" id="stakeSize" step="any"></label>
+    <label>Cooldown: <input type="text" id="cooldown"></label>
+    <button type="submit">Save Config</button>
+  </form>
+  <p>Adjust parameters and view order book in real time.</p>
+  <button id="refresh">Refresh Order Book</button>
+  <pre id="orderbook"></pre>
+  <button id="simulate">Simulate Step</button>
+  <pre id="simulateResult"></pre>
+  <button id="execute">Execute Live Trade</button>
+  <pre id="executeResult"></pre>
+  <script>
+    const form = document.getElementById('configForm');
+    async function loadConfig() {
+      const res = await fetch('/config');
+      const cfg = await res.json();
+      document.getElementById('entryThreshold').value = cfg.entry_threshold;
+      document.getElementById('exitThreshold').value = cfg.exit_threshold;
+      document.getElementById('stakeSize').value = cfg.stake_size;
+      document.getElementById('cooldown').value = cfg.cooldown;
+    }
+    form.addEventListener('submit', async e => {
+      e.preventDefault();
+      const newCfg = {
+        entry_threshold: parseFloat(document.getElementById('entryThreshold').value),
+        exit_threshold: parseFloat(document.getElementById('exitThreshold').value),
+        stake_size: parseFloat(document.getElementById('stakeSize').value),
+        cooldown: document.getElementById('cooldown').value
+      };
+      await fetch('/config', {
+        method: 'PUT',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(newCfg)
+      });
+      await loadConfig();
+      fetchOrderBook();
+    });
+    const refreshBtn = document.getElementById('refresh');
+    const obPre = document.getElementById('orderbook');
+    async function fetchOrderBook() {
+      const res = await fetch('/orderbook');
+      const data = await res.json();
+      obPre.textContent = JSON.stringify(data, null, 2);
+    }
+    refreshBtn.addEventListener('click', fetchOrderBook);
+    // bind simulate and execute buttons
+    const simulateBtn = document.getElementById('simulate');
+    const executeBtn = document.getElementById('execute');
+    const simPre = document.getElementById('simulateResult');
+    const execPre = document.getElementById('executeResult');
+    simulateBtn.addEventListener('click', async () => {
+      const res = await fetch('/simulate', { method: 'POST' });
+      const data = await res.json();
+      simPre.textContent = JSON.stringify(data, null, 2);
+    });
+    executeBtn.addEventListener('click', async () => {
+      const res = await fetch('/execute', { method: 'POST' });
+      const data = await res.json();
+      execPre.textContent = JSON.stringify(data, null, 2);
+    });
+    fetchOrderBook();
+    loadConfig();
+  </script>
+</body>
+</html>
