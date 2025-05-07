@@ -1,0 +1,12 @@
+version: '3.8'
+services:
+  bot:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      API_KEY_ID: ${API_KEY_ID}
+      API_KEY_SECRET: ${API_KEY_SECRET}
+    command: ["--api_key_id", "${API_KEY_ID}", "--api_key_secret", "${API_KEY_SECRET}"]
+    volumes:
+      - ./config/config.json:/root/config/config.json
