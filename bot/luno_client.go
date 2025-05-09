@@ -38,10 +38,15 @@ func (c *LunoClient) PostLimitOrder(ctx context.Context, req *luno.PostLimitOrde
 
 // ListTrades fetches recent trades for backtesting.
 func (c *LunoClient) ListTrades(ctx context.Context, req *luno.ListTradesRequest) (*luno.ListTradesResponse, error) {
-    return c.cli.ListTrades(ctx, req)
+	return c.cli.ListTrades(ctx, req)
 }
 
 // GetCandles fetches historical candles for backtesting.
 func (c *LunoClient) GetCandles(ctx context.Context, req *luno.GetCandlesRequest) (*luno.GetCandlesResponse, error) {
-    return c.cli.GetCandles(ctx, req)
+	return c.cli.GetCandles(ctx, req)
+}
+
+// GetBalances fetches account balances
+func (c *LunoClient) GetBalances(ctx context.Context, req *luno.GetBalancesRequest) (*luno.GetBalancesResponse, error) {
+	return c.cli.GetBalances(ctx, req)
 }

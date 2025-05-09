@@ -47,16 +47,24 @@ _Last updated: 2025-05-07 14:02:46_
 2. Extend backtester to use candle data.
 3. Report PnL metrics in UI and logs.
 
-## Phase 9 – Deployment & Monitoring (1–2 days)
-1. Dockerize Go service + front-end.
-2. Deploy to cloud VM or Kubernetes.
-3. Set up alerts (Slack/Email) on failures or P&L.
+## Phase 9 – Deployment & Monitoring (1–2 days) [in progress]
++- Dockerize Go service + front-end.
++- Deploy to cloud VM or Kubernetes.
++- Set up alerts (Slack/Email) on failures or P&L.
++- Test & implement Prometheus & Grafana monitoring and alerting setup. ✅
 
 ## Phase 10 – Iteration & Extension (ongoing)
-- Add new strategies (RSI, MACD, ML).
-- Support multiple pairs.
-- Enhance UI: real-time charts, order-book depth.
-- Build sandbox vs live test harness.
+ - Add new strategies (RSI, MACD, ML).
+ - Support multiple pairs.
+ - ✅ Implement Market Scanner UI: multi-select pairs, filters, start/stop controls, real-time results table & logs.
+ - Enhance UI: real-time charts, order-book depth.
+ - Build sandbox vs live test harness.
+ - Continuous scanning & auto-execution: background market-wide scanning for profitable signals with optional live trade triggers.
+
+## Phase 11 – Go-live & monitoring (1 day): start live trading on selected pairs, watch risk controls.
 
 **Next steps:**
-- Begin Phase 9: Dockerize service & front-end, deploy, set up monitoring.
+- Complete Phase 9 containerization & deployment (1 day).
+- Continue Phase 10 UI enhancements & sandbox testing (2 days).
+- Start implementing continuous scanning & auto-execution features (2 days).
+- Phase 11 – Go-live & monitoring (1 day): start live trading on selected pairs, watch risk controls.

@@ -1,0 +1,9 @@
+aws_region       = "us-east-1"
+ami_id           = "ami-0123456789abcdef0"       # Replace with your AMI
+instance_type    = "t3.medium"
+public_key_path  = "~/.ssh/id_rsa.pub"
+repo_url         = "https://github.com/yourusername/luno-bot.git"
+api_key_id       = "YOUR_LUNO_API_KEY_ID"
+api_key_secret   = "YOUR_LUNO_API_KEY_SECRET"
+dockerhub_username = "YOUR_DOCKERHUB_USERNAME"
+dockerhub_token    = "YOUR_DOCKERHUB_TOKEN"

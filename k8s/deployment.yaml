@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: luno-bot
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: luno-bot
+  template:
+    metadata:
+      labels:
+        app: luno-bot
+    spec:
+      containers:
+      - name: luno-bot
+        image: <YOUR_REGISTRY>/luno-bot:latest  # replace with your image path
+        envFrom:
+        - secretRef:
+            name: luno-secrets
+        - configMapRef:
+            name: luno-config
+        ports:
+        - containerPort: 8080
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 20
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 10

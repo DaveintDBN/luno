@@ -1,0 +1,11 @@
+{
+  "name": "luno-bot-web",
+  "version": "1.0.0",
+  "scripts": {
+    "test": "jest",
+    "dev": "npx http-server -c-1 . -p 8081 --proxy http://localhost:8080"
+  },
+  "devDependencies": {
+    "jest": "^29.6.1"
+  }
+}

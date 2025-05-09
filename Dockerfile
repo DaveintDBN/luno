@@ -10,7 +10,7 @@ FROM alpine:latest
 WORKDIR /root/
 # Copy binary and web assets
 COPY --from=builder /app/main .
-COPY --from=builder /app/web ./web
+COPY --from=builder /app/luno-trading-dashboard-pro-main/dist ./luno-trading-dashboard-pro-main/dist
 COPY --from=builder /app/config/config.json ./config/config.json
 EXPOSE 8080
 ENTRYPOINT ["/bin/sh", "-c", "./main --api_key_id $API_KEY_ID --api_key_secret $API_KEY_SECRET --config config/config.json"]

@@ -3,9 +3,9 @@ package bot
 import (
 	"context"
 	"fmt"
+	"github.com/google/uuid"
 	luno "github.com/luno/luno-go"
 	dec "github.com/luno/luno-go/decimal"
-	"github.com/google/uuid"
 )
 
 // LunoExecutor places real orders via Luno API with simple risk checks.
@@ -33,13 +33,13 @@ func (e *LunoExecutor) Execute(ctx context.Context, sig Signal, md MarketData, c
 			return fmt.Errorf("stake %.2f exceeds position limit %.2f", cfg.StakeSize, cfg.PositionLimit)
 		}
 		req := &luno.PostLimitOrderRequest{
-			Pair:            cfg.Pair,
-			Price:           dec.NewFromFloat64(price, 8),
-			Type:            luno.OrderTypeBid,
-			Volume:          dec.NewFromFloat64(cfg.StakeSize, 8),
-			BaseAccountId:   cfg.BaseAccountId,
-			CounterAccountId:cfg.CounterAccountId,
-			ClientOrderId:   uuid.New().String(),
+			Pair:             cfg.Pair,
+			Price:            dec.NewFromFloat64(price, 8),
+			Type:             luno.OrderTypeBid,
+			Volume:           dec.NewFromFloat64(cfg.StakeSize, 8),
+			BaseAccountId:    cfg.BaseAccountId,
+			CounterAccountId: cfg.CounterAccountId,
+			ClientOrderId:    uuid.New().String(),
 		}
 		if _, err := e.client.PostLimitOrder(ctx, req); err != nil {
 			return err
@@ -51,13 +51,13 @@ func (e *LunoExecutor) Execute(ctx context.Context, sig Signal, md MarketData, c
 			return nil // no position to exit
 		}
 		req := &luno.PostLimitOrderRequest{
-			Pair:            cfg.Pair,
-			Price:           dec.NewFromFloat64(price, 8),
-			Type:            luno.OrderTypeAsk,
-			Volume:          dec.NewFromFloat64(e.position, 8),
-			BaseAccountId:   cfg.BaseAccountId,
-			CounterAccountId:cfg.CounterAccountId,
-			ClientOrderId:   uuid.New().String(),
+			Pair:             cfg.Pair,
+			Price:            dec.NewFromFloat64(price, 8),
+			Type:             luno.OrderTypeAsk,
+			Volume:           dec.NewFromFloat64(e.position, 8),
+			BaseAccountId:    cfg.BaseAccountId,
+			CounterAccountId: cfg.CounterAccountId,
+			ClientOrderId:    uuid.New().String(),
 		}
 		if _, err := e.client.PostLimitOrder(ctx, req); err != nil {
 			return err

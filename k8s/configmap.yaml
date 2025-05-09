@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: luno-config
+  namespace: default
+data:
+  # Default bot configuration; adjust values as needed
+  config.json: |
+    {
+      "pair": "XBTZAR",
+      "entry_threshold": 0.01,
+      "exit_threshold": 0.01,
+      "stake_size": 1.0,
+      "cooldown": "1m",
+      "position_limit": 0.1,
+      "max_drawdown": 0.05,
+      "short_window": 5,
+      "long_window": 20,
+      "base_account_id": 0,
+      "counter_account_id": 0
+    }

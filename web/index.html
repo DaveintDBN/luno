@@ -1,76 +1,219 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
   <meta charset="UTF-8">
   <title>Luno Bot Dashboard</title>
+  <script>tailwind.config = { darkMode: 'class' }</script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
 </head>
-<body>
-  <h1>Luno Bot Dashboard</h1>
-  <form id="configForm">
-    <label>Entry Threshold: <input type="number" id="entryThreshold" step="any"></label>
-    <label>Exit Threshold: <input type="number" id="exitThreshold" step="any"></label>
-    <label>Stake Size: <input type="number" id="stakeSize" step="any"></label>
-    <label>Cooldown: <input type="text" id="cooldown"></label>
-    <button type="submit">Save Config</button>
-  </form>
-  <p>Adjust parameters and view order book in real time.</p>
-  <button id="refresh">Refresh Order Book</button>
-  <pre id="orderbook"></pre>
-  <button id="simulate">Simulate Step</button>
-  <pre id="simulateResult"></pre>
-  <button id="execute">Execute Live Trade</button>
-  <pre id="executeResult"></pre>
-  <script>
-    const form = document.getElementById('configForm');
-    async function loadConfig() {
-      const res = await fetch('/config');
-      const cfg = await res.json();
-      document.getElementById('entryThreshold').value = cfg.entry_threshold;
-      document.getElementById('exitThreshold').value = cfg.exit_threshold;
-      document.getElementById('stakeSize').value = cfg.stake_size;
-      document.getElementById('cooldown').value = cfg.cooldown;
-    }
-    form.addEventListener('submit', async e => {
-      e.preventDefault();
-      const newCfg = {
-        entry_threshold: parseFloat(document.getElementById('entryThreshold').value),
-        exit_threshold: parseFloat(document.getElementById('exitThreshold').value),
-        stake_size: parseFloat(document.getElementById('stakeSize').value),
-        cooldown: document.getElementById('cooldown').value
-      };
-      await fetch('/config', {
-        method: 'PUT',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify(newCfg)
-      });
-      await loadConfig();
-      fetchOrderBook();
-    });
-    const refreshBtn = document.getElementById('refresh');
-    const obPre = document.getElementById('orderbook');
-    async function fetchOrderBook() {
-      const res = await fetch('/orderbook');
-      const data = await res.json();
-      obPre.textContent = JSON.stringify(data, null, 2);
-    }
-    refreshBtn.addEventListener('click', fetchOrderBook);
-    // bind simulate and execute buttons
-    const simulateBtn = document.getElementById('simulate');
-    const executeBtn = document.getElementById('execute');
-    const simPre = document.getElementById('simulateResult');
-    const execPre = document.getElementById('executeResult');
-    simulateBtn.addEventListener('click', async () => {
-      const res = await fetch('/simulate', { method: 'POST' });
-      const data = await res.json();
-      simPre.textContent = JSON.stringify(data, null, 2);
-    });
-    executeBtn.addEventListener('click', async () => {
-      const res = await fetch('/execute', { method: 'POST' });
-      const data = await res.json();
-      execPre.textContent = JSON.stringify(data, null, 2);
-    });
-    fetchOrderBook();
-    loadConfig();
-  </script>
+<body class="bg-white text-gray-900 dark:bg-gray-900 dark:text-gray-100">
+  <div id="kpiPanel" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+    <div class="bg-gray-50 border border-gray-200 text-gray-800 p-4 rounded-lg text-center">Status: <span id="statusBadge" class="font-bold"></span></div>
+    <div class="bg-gray-50 border border-gray-200 text-gray-800 p-4 rounded-lg text-center">Current Position: <span id="currentPosition" class="font-mono"></span></div>
+    <div class="bg-green-50 border border-green-200 text-green-800 p-4 rounded-lg text-center">Total PnL: <span id="currentPnL" class="font-mono"></span></div>
+    <div class="bg-red-50 border border-red-200 text-red-800 p-4 rounded-lg text-center">Drawdown Exceeded: <span id="drawdownExceeded" class="font-mono"></span></div>
+  </div>
+  <h1 class="text-3xl font-bold text-center mb-8">Luno Bot Dashboard</h1>
+  <nav id="tabs" class="mb-6 flex items-center" role="tablist">
+    <ul class="flex border-b">
+      <li role="presentation" class="-mb-px mr-1"><a id="tab-configPanel" data-target="configPanel" role="tab" aria-controls="configPanel" aria-selected="true" class="tab-link bg-white inline-block py-2 px-4 text-blue-600 font-semibold">Config</a></li>
+      <li role="presentation" class="mr-1"><a id="tab-orderbookPanel" data-target="orderbookPanel" role="tab" aria-controls="orderbookPanel" aria-selected="false" class="tab-link inline-block py-2 px-4 text-gray-600 hover:text-blue-600">Order Book</a></li>
+      <li role="presentation" class="mr-1"><a id="tab-simulationPanel" data-target="simulationPanel" role="tab" aria-controls="simulationPanel" aria-selected="false" class="tab-link inline-block py-2 px-4 text-gray-600 hover:text-blue-600">Simulation</a></li>
+      <li role="presentation" class="mr-1"><a id="tab-scannerPanel" data-target="scannerPanel" role="tab" aria-controls="scannerPanel" aria-selected="false" class="tab-link inline-block py-2 px-4 text-gray-600 hover:text-blue-600">Scanner</a></li>
+      <li role="presentation" class="mr-1"><a id="tab-backtestPanel" data-target="backtestPanel" role="tab" aria-controls="backtestPanel" aria-selected="false" class="tab-link inline-block py-2 px-4 text-gray-600 hover:text-blue-600">Backtest</a></li>
+      <li role="presentation"><a id="tab-logsPanel" data-target="logsPanel" role="tab" aria-controls="logsPanel" aria-selected="false" class="tab-link inline-block py-2 px-4 text-gray-600 hover:text-blue-600">Logs</a></li>
+    </ul>
+    <button id="themeToggle" class="ml-auto p-2 bg-gray-200 dark:bg-gray-700 rounded" aria-label="Toggle theme">🌙</button>
+  </nav>
+  <div id="configPanel" role="tabpanel" aria-labelledby="tab-configPanel" aria-hidden="false" class="tab-content bg-white p-6 rounded-lg shadow overflow-y-auto max-h-[calc(100vh-200px)]">
+    <h2>Configuration <button class="toggle-btn">-</button></h2>
+    <div class="panel-content">
+      <form id="configForm">
+        <label class="block mb-4">
+          Entry Threshold:
+          <input type="number" id="entryThreshold" step="any" class="sr-only">
+          <input type="range" id="entryThresholdSlider" min="0" max="1" step="0.01" class="w-full">
+          <div class="text-sm text-gray-600">Value: <span id="entryThresholdValue"></span></div>
+          <span class="tooltip" title="Percentage price move to trigger entry">?</span>
+          <span id="entryThresholdError" class="error-msg"></span>
+        </label>
+        <label class="block mb-4">
+          Exit Threshold:
+          <input type="number" id="exitThreshold" step="any" class="sr-only">
+          <input type="range" id="exitThresholdSlider" min="0" max="1" step="0.01" class="w-full">
+          <div class="text-sm text-gray-600">Value: <span id="exitThresholdValue"></span></div>
+          <span class="tooltip" title="Percentage price move to trigger exit">?</span>
+          <span id="exitThresholdError" class="error-msg"></span>
+        </label>
+        <label>Stake Size: <input type="number" id="stakeSize" step="any"><span class="tooltip" title="Trade amount in ZAR">?</span><span id="stakeSizeError" class="error-msg"></span></label>
+        <label>Cooldown: <input type="text" id="cooldown"><span class="tooltip" title="Time between trades (e.g., 1m)">?</span><span id="cooldownError" class="error-msg"></span></label>
+        <label class="block mb-4">
+          RSI Period: <input type="number" id="rsiPeriod" class="w-full" min="1" step="1">
+          <span class="tooltip" title="RSI period for calculation">?</span>
+          <span id="rsiPeriodError" class="error-msg"></span>
+        </label>
+        <label class="block mb-4">
+          RSI Overbought: <input type="number" id="rsiOverbought" class="w-full" step="any">
+          <span class="tooltip" title="RSI value above which to sell">?</span>
+          <span id="rsiOverboughtError" class="error-msg"></span>
+        </label>
+        <label class="block mb-4">
+          RSI Oversold: <input type="number" id="rsiOversold" class="w-full" step="any">
+          <span class="tooltip" title="RSI value below which to buy">?</span>
+          <span id="rsiOversoldError" class="error-msg"></span>
+        </label>
+        <label class="block mb-4">
+          Initial Equity: <input type="number" id="initialEquity" step="any" class="w-full">
+          <span class="tooltip" title="Starting capital for sizing">?</span>
+          <span id="initialEquityError" class="error-msg"></span>
+        </label>
+        <label class="block mb-4">
+          Position Sizer: <select id="positionSizerType" class="w-full">
+            <option value="fixed">Fixed</option>
+            <option value="kelly">Kelly</option>
+          </select>
+          <span class="tooltip" title="Position sizing method">?</span>
+          <span id="positionSizerTypeError" class="error-msg"></span>
+        </label>
+        <label class="block mb-4">
+          Kelly Win Prob: <input type="number" id="kellyWinProb" step="any" class="w-full">
+          <span class="tooltip" title="Kelly win probability (0-1)">?</span>
+          <span id="kellyWinProbError" class="error-msg"></span>
+        </label>
+        <label class="block mb-4">
+          Kelly Win/Loss Ratio: <input type="number" id="kellyWinLossRatio" step="any" class="w-full">
+          <span class="tooltip" title="Kelly average win/loss ratio">?</span>
+          <span id="kellyWinLossRatioError" class="error-msg"></span>
+        </label>
+        <label class="block mb-4">
+          TWAP Slices: <input type="number" id="twapSlices" min="1" class="w-full">
+          <span class="tooltip" title="Number of TWAP slices">?</span>
+          <span id="twapSlicesError" class="error-msg"></span>
+        </label>
+        <label class="block mb-4">
+          TWAP Interval (s): <input type="number" id="twapIntervalSeconds" min="1" class="w-full">
+          <span class="tooltip" title="Seconds between TWAP slices">?</span>
+          <span id="twapIntervalSecondsError" class="error-msg"></span>
+        </label>
+        <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Save Config</button>
+      </form>
+    </div>
+  </div>
+  <div id="orderbookPanel" role="tabpanel" aria-labelledby="tab-orderbookPanel" aria-hidden="true" class="tab-content hidden bg-white p-6 rounded-lg shadow overflow-y-auto max-h-[calc(100vh-200px)]">
+    <h2>Order Book <span id="orderbookTimestamp" class="timestamp"></span> <button class="toggle-btn">-</button></h2>
+    <div class="panel-content">
+      <button id="refresh" class="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600">Refresh Order Book</button>
+      <label><input type="checkbox" id="autoRefreshToggle"> Auto-refresh</label>
+      <label>Interval (s): <input type="number" id="autoRefreshInterval" value="5" min="1" style="width:50px;"></label>
+      <div class="overflow-auto max-h-80 bg-gray-50 p-2 rounded mb-4">
+        <pre id="orderbook"></pre>
+      </div>
+      <canvas id="depthChart" class="chart"></canvas>
+    </div>
+  </div>
+  <div id="simulationPanel" role="tabpanel" aria-labelledby="tab-simulationPanel" aria-hidden="true" class="tab-content hidden bg-white p-6 rounded-lg shadow overflow-y-auto max-h-[calc(100vh-200px)]">
+    <h2>Simulation & Execution <button class="toggle-btn">-</button></h2>
+    <div class="panel-content flex flex-col gap-4">
+      <label style="margin-bottom:8px; display:flex; align-items:center;"><input type="checkbox" id="sandboxMode" checked style="margin-right:4px;">Sandbox Mode</label>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <canvas id="priceChart" class="chart h-48"></canvas>
+        <canvas id="pnlChart" class="chart h-48"></canvas>
+      </div>
+      <div class="flex gap-2">
+        <button id="simulate" class="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600">Simulate Step</button>
+        <button id="execute" class="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 ml-2">Execute Live Trade</button>
+      </div>
+      <div class="overflow-auto max-h-40 bg-gray-50 p-2 rounded">
+        <pre id="simulateResult"></pre>
+      </div>
+      <div class="overflow-auto max-h-40 bg-gray-50 p-2 rounded">
+        <pre id="executeResult"></pre>
+      </div>
+      <div class="mt-4 overflow-y-auto max-h-48">
+        <h3 class="font-semibold mb-2">Simulation History</h3>
+        <table class="min-w-full text-sm text-left">
+          <thead><tr><th class="px-2 py-1">Time</th><th class="px-2 py-1">Position</th><th class="px-2 py-1">PnL</th></tr></thead>
+          <tbody id="simHistoryBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div id="backtestPanel" role="tabpanel" aria-labelledby="tab-backtestPanel" aria-hidden="true" class="tab-content hidden bg-white p-6 rounded-lg shadow overflow-y-auto max-h-[calc(100vh-200px)]">
+    <h2>Backtest <button class="toggle-btn">-</button></h2>
+    <div class="panel-content">
+      <form id="backtestForm">
+        <label class="block mb-4">
+          Pair: <select id="backtestPair" class="w-full"></select>
+          <span class="tooltip" title="Market pair">?</span>
+          <span id="backtestPairError" class="error-msg"></span>
+        </label>
+        <label class="block mb-4">
+          Since (min): <input type="number" id="backtestSince" value="60" min="1" class="w-full">
+          <span class="tooltip" title="Minutes back">?</span>
+          <span id="backtestSinceError" class="error-msg"></span>
+        </label>
+        <label class="block mb-4">
+          Short SMA: <input type="number" id="backtestShort" value="5" min="1" class="w-full">
+          <span class="tooltip" title="Short window">?</span>
+          <span id="backtestShortError" class="error-msg"></span>
+        </label>
+        <label class="block mb-4">
+          Long SMA: <input type="number" id="backtestLong" value="10" min="1" class="w-full">
+          <span class="tooltip" title="Long window">?</span>
+          <span id="backtestLongError" class="error-msg"></span>
+        </label>
+        <label class="block mb-4">
+          Fee Rate: <input type="number" id="backtestFeeRate" step="any" value="0.001" class="w-full">
+          <span class="tooltip" title="Trading fee rate">?</span>
+          <span id="backtestFeeRateError" class="error-msg"></span>
+        </label>
+        <button type="submit" id="runBacktest" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Run Backtest</button>
+      </form>
+      <div id="backtestMetrics" class="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4"></div>
+      <canvas id="backtestPnlChart" class="chart mt-4"></canvas>
+      <canvas id="backtestDrawdownChart" class="chart mt-4"></canvas>
+    </div>
+  </div>
+  <div id="scannerPanel" role="tabpanel" aria-labelledby="tab-scannerPanel" aria-hidden="true" class="tab-content hidden bg-white p-6 rounded-lg shadow overflow-y-auto max-h-[calc(100vh-200px)]">
+    <h2>Market Scanner <button class="toggle-btn">-</button></h2>
+    <div class="panel-content">
+      <label>Pairs: <select id="pairs" multiple size="8"></select><span class="tooltip" title="Select one or more trading pairs">?</span></label>
+      <label>Min Volume (ZAR): <input type="number" id="minVolume" placeholder="e.g. 1000000"><span class="tooltip" title="Minimum 24h volume (ZAR)">?</span><span id="minVolumeError" class="error-msg"></span></label>
+      <label>Entry Threshold: <input type="number" step="any" id="scanEntryThreshold" placeholder="0.01"><span class="tooltip" title="Signal threshold to enter">?</span><span id="scanEntryThresholdError" class="error-msg"></span></label>
+      <label>Exit Threshold: <input type="number" step="any" id="scanExitThreshold" placeholder="0.01"><span class="tooltip" title="Signal threshold to exit">?</span><span id="scanExitThresholdError" class="error-msg"></span></label>
+      <button id="startScan">Start Scan</button>
+      <button id="stopScan" disabled>Stop Scan</button>
+      <div class="autoscan-controls" style="margin-top:8px;">
+        <label>Interval (s): <input type="number" id="scanInterval" value="10" min="1" style="width:60px;"></label>
+        <label style="margin-left:8px;"><input type="checkbox" id="autoExecuteOption"> Auto-Execute</label>
+        <button id="startAutoScan" style="margin-left:8px;">Start Auto-Scan</button>
+        <button id="stopAutoScan" disabled style="margin-left:4px;">Stop Auto-Scan</button>
+      </div>
+      <div class="overflow-auto max-h-80 mb-4">
+        <table id="scanResults" class="min-w-full text-sm text-left divide-y divide-gray-200 dark:divide-gray-700">
+          <thead><tr class="bg-gray-100 dark:bg-gray-800"><th class="px-2 py-1 font-medium text-gray-700 dark:text-gray-300">Pair</th><th class="px-2 py-1 font-medium text-gray-700 dark:text-gray-300">Bid</th><th class="px-2 py-1 font-medium text-gray-700 dark:text-gray-300">Ask</th><th class="px-2 py-1 font-medium text-gray-700 dark:text-gray-300">Signal</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div id="scanPagination" class="flex items-center justify-between mt-2">
+        <button id="prevPage" disabled class="px-2 py-1 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed">Prev</button>
+        <span id="pageInfo" class="px-2 text-sm">Page 1 / 1</span>
+        <button id="nextPage" disabled class="px-2 py-1 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed">Next</button>
+        <label class="flex items-center space-x-1"><span class="text-sm">Size:</span><input type="number" id="pageSize" value="10" min="1" class="w-16 text-sm px-1 py-0.5 border rounded bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200"></label>
+      </div>
+      <pre id="scanLogs" role="log" aria-live="polite" aria-atomic="false"></pre>
+    </div>
+  </div>
+  <div id="logsPanel" role="tabpanel" aria-labelledby="tab-logsPanel" aria-hidden="true" class="tab-content hidden bg-white p-6 rounded-lg shadow overflow-y-auto max-h-[calc(100vh-200px)]">
+    <h2>Live Logs <button class="toggle-btn">-</button></h2>
+    <div class="panel-content">
+      <pre id="liveLogs" role="log" aria-live="polite" aria-atomic="false" style="max-height:200px; overflow:auto; background:#1e1e1e; color:#cbd5e0;"></pre>
+    </div>
+  </div>
+  <div id="toast-container" class="fixed top-4 right-4 space-y-2 z-50"></div>
+  <script src="main.js"></script>
 </body>
 </html>

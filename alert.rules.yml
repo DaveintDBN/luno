@@ -1,0 +1,19 @@
+groups:
+- name: luno-bot-alerts
+  rules:
+  - alert: BotDown
+    expr: up{job="luno-bot"} == 0
+    for: 1m
+    labels:
+      severity: critical
+    annotations:
+      summary: "Luno bot is down"
+      description: "The Luno bot has stopped responding."
+  - alert: LowPnL
+    expr: simulation_total_pnl < -500
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "Simulation Total PnL Low"
+      description: "Total simulated PnL is below -500 ZAR for 5m."

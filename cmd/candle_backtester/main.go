@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"time"
 
-	luno "github.com/luno/luno-go"
 	"github.com/luno/luno-bot/bot"
+	luno "github.com/luno/luno-go"
 )
 
 func main() {

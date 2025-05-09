@@ -1,12 +1,43 @@
-version: '3.8'
 services:
   bot:
     build: .
     ports:
-      - "8080:8080"
+      - "8081:8080"  # change host port to avoid conflict
     environment:
       API_KEY_ID: ${API_KEY_ID}
       API_KEY_SECRET: ${API_KEY_SECRET}
-    command: ["--api_key_id", "${API_KEY_ID}", "--api_key_secret", "${API_KEY_SECRET}"]
+    entrypoint: ["/bin/sh", "-c", "/root/main --api_key_id $API_KEY_ID --api_key_secret $API_KEY_SECRET --config config/config.json"]
     volumes:
       - ./config/config.json:/root/config/config.json
+      - ./web:/root/web:ro
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9091:9090"  # host port changed to avoid conflict
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus/alert.rules.yml:/etc/prometheus/alert.rules.yml:ro
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+  grafana:
+    image: grafana/grafana:latest
+    depends_on:
+      - prometheus
+    ports:
+      - "3002:3000"  # change host port to avoid conflict
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning
+      - ./grafana/dashboards:/var/lib/grafana/dashboards
+  alertmanager:
+    image: prom/alertmanager:latest
+    ports:
+      - "9093:9093"
+    depends_on:
+      - prometheus
+    environment:
+      SLACK_WEBHOOK_URL: ${SLACK_WEBHOOK_URL}
+    volumes:
+      - ./alertmanager/config.yml:/etc/alertmanager/config.yml:ro
